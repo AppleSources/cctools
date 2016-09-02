@@ -1,29 +1,29 @@
 /*
- * Copyright (c) 2004, Apple Computer, Inc. All rights reserved.
+ * Copyright (c) 2000-2005 Apple Computer, Inc. All rights reserved.
+ *
+ * @APPLE_OSREFERENCE_LICENSE_HEADER_START@
  * 
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1.  Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer. 
- * 2.  Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution. 
- * 3.  Neither the name of Apple Computer, Inc. ("Apple") nor the names of
- *     its contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission. 
+ * This file contains Original Code and/or Modifications of Original Code
+ * as defined in and that are subject to the Apple Public Source License
+ * Version 2.0 (the 'License'). You may not use this file except in
+ * compliance with the License. The rights granted to you under the License
+ * may not be used to create, or enable the creation or redistribution of,
+ * unlawful or unlicensed copies of an Apple operating system, or to
+ * circumvent, violate, or enable the circumvention or violation of, any
+ * terms of an Apple operating system software license agreement.
  * 
- * THIS SOFTWARE IS PROVIDED BY APPLE AND ITS CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL APPLE OR ITS CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
- * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Please obtain a copy of the License at
+ * http://www.opensource.apple.com/apsl/ and read it before using this file.
+ * 
+ * The Original Code and all software distributed under the License are
+ * distributed on an 'AS IS' basis, WITHOUT WARRANTY OF ANY KIND, EITHER
+ * EXPRESS OR IMPLIED, AND APPLE HEREBY DISCLAIMS ALL SUCH WARRANTIES,
+ * INCLUDING WITHOUT LIMITATION, ANY WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE, QUIET ENJOYMENT OR NON-INFRINGEMENT.
+ * Please see the License for the specific language governing rights and
+ * limitations under the License.
+ * 
+ * @APPLE_OSREFERENCE_LICENSE_HEADER_END@
  */
 /*
  * @OSF_COPYRIGHT@
@@ -32,139 +32,68 @@
 #ifndef	_MACH_PPC_THREAD_STATUS_H_
 #define _MACH_PPC_THREAD_STATUS_H_
 
+#include <mach/ppc/_structs.h>
+#include <mach/message.h>
+
 /*
  * ppc_thread_state is the structure that is exported to user threads for 
  * use in status/mutate calls.  This structure should never change.
  *
- * TODO : it'd be nice to provide 64 bit compatibility in this structure
- *        - need to make sure that it's understood by gdb though?
  */
 
 #define PPC_THREAD_STATE        1
 #define PPC_FLOAT_STATE         2
-#define PPC_EXCEPTION_STATE	3
-#define THREAD_STATE_NONE	7
+#define PPC_EXCEPTION_STATE		3
+#define PPC_VECTOR_STATE		4
+#define PPC_THREAD_STATE64		5
+#define PPC_EXCEPTION_STATE64	6
+/*
+#define THREAD_STATE_NONE		7
+*/
 	       
-typedef struct ppc_thread_state {
-	unsigned int srr0;      /* Instruction address register (PC) */
-	unsigned int srr1;	/* Machine state register (supervisor) */
-				/* srr1 may contain SRR_SYSCALL_VAL */
-	unsigned int r0;
-	unsigned int r1;
-	unsigned int r2;
-	unsigned int r3;
-	unsigned int r4;
-	unsigned int r5;
-	unsigned int r6;
-	unsigned int r7;
-	unsigned int r8;
-	unsigned int r9;
-	unsigned int r10;
-	unsigned int r11;
-	unsigned int r12;
-	unsigned int r13;
-	unsigned int r14;
-	unsigned int r15;
-	unsigned int r16;
-	unsigned int r17;
-	unsigned int r18;
-	unsigned int r19;
-	unsigned int r20;
-	unsigned int r21;
-	unsigned int r22;
-	unsigned int r23;
-	unsigned int r24;
-	unsigned int r25;
-	unsigned int r26;
-	unsigned int r27;
-	unsigned int r28;
-	unsigned int r29;
-	unsigned int r30;
-	unsigned int r31;
+/*
+ * VALID_THREAD_STATE_FLAVOR is a platform specific macro that when passed
+ * an exception flavor will return whether that is a defined flavor for
+ * that platform.
+ * The macro must be manually updated to include all of the valid exception
+ * flavors as defined above.
+ */
+/*
+#define VALID_THREAD_STATE_FLAVOR(x)       \
+        ((x == PPC_THREAD_STATE)        || \
+         (x == PPC_FLOAT_STATE)         || \
+	 (x == PPC_EXCEPTION_STATE)     	|| \
+         (x == PPC_VECTOR_STATE)        || \
+         (x == PPC_THREAD_STATE64)      || \
+         (x == PPC_EXCEPTION_STATE64)   || \
+         (x == THREAD_STATE_NONE))
+*/
 
-	unsigned int cr;        /* Condition register */
-	unsigned int xer;	/* User's integer exception register */
-	unsigned int lr;	/* Link register */
-	unsigned int ctr;	/* Count register */
-	unsigned int mq;	/* MQ register (601 only) */
-
-	unsigned int pad;      /* structure TODO - check these! */
-} ppc_thread_state_t;
-
-/* This structure should be double-word aligned for performance */
-
-typedef struct ppc_float_state {
-	double  fpregs[32];
-
-	unsigned int fpscr_pad; /* fpscr is 64 bits, 32 bits of rubbish */
-	unsigned int fpscr;	/* floating point status register */
-} ppc_float_state_t;
+typedef _STRUCT_PPC_THREAD_STATE	ppc_thread_state_t;
+#if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+typedef _STRUCT_PPC_THREAD_STATE64	ppc_thread_state64_t;
+#endif /* (_POSIX_C_SOURCE && !_DARWIN_C_SOURCE) */
+typedef _STRUCT_PPC_FLOAT_STATE		ppc_float_state_t;
+typedef _STRUCT_PPC_VECTOR_STATE	ppc_vector_state_t;
 
 /*
  * saved state structure
  *
- * This structure corresponds to the state of the user registers as saved
- * on the stack upon kernel entry (saved in pcb). On interrupts and exceptions
- * we save all registers. On system calls we only save the registers not
- * saved by the caller.
+ * This structure corresponds to the saved state. 
  *
- * NB: If you change this structure you must also change the KGDB stub as well.
- * 
- * TODO : not sure about the save/restore regs. Does this need to be
- *        different to ppc_thread_state?
  */
 
-typedef struct ppc_saved_state {
-	unsigned int srr0;      /* Instruction address register (PC) */
-	unsigned int srr1;	/* Machine state register (supervisor) */
-				/* srr1 may contain SRR_SYSCALL_VAL */
-	unsigned int r0;
-	unsigned int r1;
-	unsigned int r2;
-	unsigned int r3;
-	unsigned int r4;
-	unsigned int r5;
-	unsigned int r6;
-	unsigned int r7;
-	unsigned int r8;
-	unsigned int r9;
-	unsigned int r10;
-	unsigned int r11;
-	unsigned int r12;
-	unsigned int r13;
-	unsigned int r14;
-	unsigned int r15;
-	unsigned int r16;
-	unsigned int r17;
-	unsigned int r18;
-	unsigned int r19;
-	unsigned int r20;
-	unsigned int r21;
-	unsigned int r22;
-	unsigned int r23;
-	unsigned int r24;
-	unsigned int r25;
-	unsigned int r26;
-	unsigned int r27;
-	unsigned int r28;
-	unsigned int r29;
-	unsigned int r30;
-	unsigned int r31;
+#ifdef	MACH__POSIX_C_SOURCE_PRIVATE
 
-	unsigned int cr;        /* Condition register */
-	unsigned int xer;	/* User's integer exception register */
-	unsigned int lr;	/* Link register */
-	unsigned int ctr;	/* Count register */
-	unsigned int mq;	/* MQ register (601 only) */
-	unsigned int pad;	/* To mirror pcb_thread_state in pcb*/
+#include <ppc/savearea.h>
 
-/*	These are extra.  Remove them from the count */
+typedef struct savearea				ppc_saved_state_t;
 
-	unsigned int sr_copyin; /* SR_COPYIN is used for remapping */
-	unsigned int pad2;	/* struct alignment */
-	unsigned int pad3;
-	unsigned int pad4;
-} ppc_saved_state_t;
+#else	/* MACH__POSIX_C_SOURCE_PRIVATE */
+
+typedef struct ppc_thread_state			ppc_saved_state_t;
+
+#endif	/* MACH__POSIX_C_SOURCE_PRIVATE */
 
 /*
  * ppc_exception_state
@@ -179,38 +108,49 @@ typedef struct ppc_saved_state {
  * compatiblity.
  */
 
-typedef struct ppc_exception_state {
-	unsigned long dar;	/* Fault registers for coredump */
-	unsigned long dsisr;
-	unsigned long exception;/* number of powerpc exception taken */
-	unsigned long pad0;	/* align to 16 bytes */
+/* Exception state for 32-bit thread (on 32-bit processor) */
+/* Still available on 64-bit processors, but may fall short */
+/* of covering the full potential state (hi half available). */
 
-	unsigned long pad1[4];	/* space in PCB "just in case" */
-} ppc_exception_state_t;
+typedef _STRUCT_PPC_EXCEPTION_STATE	ppc_exception_state_t;
+#if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+typedef _STRUCT_PPC_EXCEPTION_STATE64	ppc_exception_state64_t;
+#endif /* (_POSIX_C_SOURCE && !_DARWIN_C_SOURCE) */
 
 /*
  * Save State Flags
  */
 
-#define PPC_THREAD_STATE_COUNT \
-   (sizeof(struct ppc_thread_state) / sizeof(int))
+#define PPC_THREAD_STATE_COUNT ((mach_msg_type_number_t) \
+   (sizeof(ppc_thread_state_t) / sizeof(int)))
 
-#define PPC_EXCEPTION_STATE_COUNT \
-   (sizeof(struct ppc_exception_state) / sizeof(int))
+#define PPC_THREAD_STATE64_COUNT ((mach_msg_type_number_t) \
+   (sizeof(ppc_thread_state64_t) / sizeof(int)))
 
-#define PPC_FLOAT_STATE_COUNT \
-   (sizeof(struct ppc_float_state) / sizeof(int))
+#define PPC_EXCEPTION_STATE_COUNT ((mach_msg_type_number_t) \
+   (sizeof(ppc_exception_state_t) / sizeof(int)))
+
+#define PPC_EXCEPTION_STATE64_COUNT ((mach_msg_type_number_t) \
+   (sizeof(ppc_exception_state64_t) / sizeof(int)))
+
+#define PPC_FLOAT_STATE_COUNT ((mach_msg_type_number_t) \
+   (sizeof(ppc_float_state_t) / sizeof(int)))
+
+#define PPC_VECTOR_STATE_COUNT ((mach_msg_type_number_t) \
+   (sizeof(ppc_vector_state_t) / sizeof(int)))
 
 /*
  * Machine-independent way for servers and Mach's exception mechanism to
  * choose the most efficient state flavor for exception RPC's:
  */
-#define PPC_MACHINE_THREAD_STATE		PPC_THREAD_STATE
-#define PPC_MACHINE_THREAD_STATE_COUNT	PPC_THREAD_STATE_COUNT
+/*
+#define MACHINE_THREAD_STATE		PPC_THREAD_STATE
+#define MACHINE_THREAD_STATE_COUNT	PPC_THREAD_STATE_COUNT
+*/
 
 /*
  * Largest state on this machine:
  */
-#define PPC_THREAD_MACHINE_STATE_MAX	PPC_FLOAT_STATE_COUNT
+#define THREAD_MACHINE_STATE_MAX	THREAD_STATE_MAX
 
 #endif /* _MACH_PPC_THREAD_STATUS_H_ */
