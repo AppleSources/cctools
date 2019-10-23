@@ -1,4 +1,4 @@
-.TH RLD 3 "August 3, 2000" "Apple Computer, Inc."
+.TH RLD 3 "July 28, 2005" "Apple Computer, Inc."
 .SH NAME
 rld_load, rld_load_from_memory, rld_unload, rld_lookup, rld_forget_symbol, rld_unload_all, rld_load_basefile, rld_address_func, rld_write_symfile \- programmatically link edit and load object files
 .SH SYNOPSIS
@@ -168,7 +168,7 @@ and
 .I object_size 
 are the memory address and size of the object file.  
 .I rld_load_from_memory()
-only allows one thin object file (not an archive or ``fat'' file) to be
+only allows one thin object file (not an archive or ``universal'' file) to be
 loaded.
 .PP
 .I rld_unload()
@@ -227,10 +227,10 @@ The second argument to
 specifies a base file, whose symbol table is taken as the
 basis for subsequent
 .I rld_load's.
-The base file may be a ``fat'' file, and
+The base file may be a ``universal'' file, and
 must contain an architecture that would execute on the host; 
 otherwise, it is an error.  
-If the file is a fat file, the ``best'' architecture (as defined by
+If the file is a universal file, the ``best'' architecture (as defined by
 what the kernel 
 .IR exec (2) 
 would select) is used as the base file.
@@ -274,9 +274,9 @@ writes an object file containing only absolute symbols that mirrors that last
 object set loaded.  This file can later be used to recreate the loaded state
 after the sets have been unloaded.  It returns 1 for success and 0 for failure.
 
-.SH "FAT FILE SUPPORT"
-All functions that accept object files or archives also accept ``fat'' files,
-except for the restrictions noted above for
+.SH "UNIVERSAL FILE SUPPORT"
+All functions that accept object files or archives also accept ``universal''
+files, except for the restrictions noted above for
 .I rld_load_from_memory
 and
 .IR rld_load_basefile .
